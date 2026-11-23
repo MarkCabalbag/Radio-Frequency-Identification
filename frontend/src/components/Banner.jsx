@@ -1,11 +1,15 @@
-import React from "react";
 import logo from "../assets/logo.png";
+
 function Banner() {
   return (
-    <div className="d-flex flex-column align-items-center pb-2 border-bottom border-primary text-center">
-      <img src={logo} style={{ width: "150px" }} alt="" />
-      <h5 className="fw-bold">Radio Frequency Identification</h5>
-      <h4 className="text-primary">Ilocos Sur Polytechnic State College</h4>
+    <div className="brand-banner">
+      <img src={logo} className="brand-banner__logo" alt="ISPSC logo" />
+      <div>
+        <p className="brand-banner__kicker">Radio Frequency Identification</p>
+        <h4 className="brand-banner__title">
+          Ilocos Sur Polytechnic State College
+        </h4>
+      </div>
     </div>
   );
 }

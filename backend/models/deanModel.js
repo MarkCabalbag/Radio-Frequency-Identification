@@ -24,9 +24,7 @@ const deanSchema = mongoose.Schema(
       required: [true, "Please add password"],
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-module.exports = Dean = mongoose.model("Dean", deanSchema);
+module.exports = mongoose.model("Dean", deanSchema);

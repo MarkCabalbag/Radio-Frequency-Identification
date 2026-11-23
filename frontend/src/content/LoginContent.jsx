@@ -1,107 +1,87 @@
-import { departmentOptions } from "../components/objects/departmentOptions";
-import { useState, useEffect } from "react";
-import toast from "react-hot-toast";
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 import { useLoginAccount } from "../hooks/useRegisterAccount";
-import ButtonSpinner from "../components/ButtonSpinner.jsx";
+import { useFormFields } from "../hooks/useFormFields";
+import { storeDean } from "../utils/session";
+import { DEFAULT_DEPARTMENT } from "../components/objects/departmentOptions";
+import ButtonSpinner from "../components/ButtonSpinner";
+import TextField from "../components/forms/TextField";
+import DepartmentSelect from "../components/forms/DepartmentSelect";
+
+const INITIAL_VALUES = { email: "", password: "" };
+
 function LoginContent({ changeForm }) {
   const navigate = useNavigate();
+  const { values, handleChange, reset } = useFormFields(INITIAL_VALUES);
+  const [department, setDepartment] = useState(DEFAULT_DEPARTMENT);
 
-  const [selectedDepartment, setSelectedDepartment] = useState(
-    departmentOptions[0].department
-  );
-  const [user, setUser] = useState({
-    email: "",
-    password: "",
+  const resetForm = () => {
+    reset();
+    setDepartment(DEFAULT_DEPARTMENT);
+  };
+
+  const { mutateAsync, isPending } = useLoginAccount({
+    onSuccess: (data) => {
+      resetForm();
+      toast.success("Login Successfully");
+      storeDean(data);
+      navigate("/dashboard/home");
+    },
+    onError: (error) => {
+      toast.error(error.message);
+      resetForm();
+    },
   });
 
-  const { email, department, password } = user;
-  const handleChange = (e) => {
-    setUser({
-      ...user,
-      [e.target.name]: e.target.value,
-    });
-  };
-  const handleResetInputValue = () => {
-    setUser({
-      email: "",
-      password: "",
-    });
-    setSelectedDepartment("");
-  };
-  const onSuccess = (data) => {
-    handleResetInputValue();
-    toast.success("Login Successfully");
-    console.log(data);
-    localStorage.setItem("dean", JSON.stringify(data));
-    navigate("/dashboard/home");
-  };
+  const handleLogin = async (e) => {
+    e.preventDefault();
 
-  const onError = (error) => {
-    toast.error(`${error.message}`);
-    handleResetInputValue();
-  };
-  const { mutateAsync, error, isLoading, isSuccess, isPending } =
-    useLoginAccount({ onSuccess, onError });
+    if (department === DEFAULT_DEPARTMENT) {
+      toast.error("Please select which department");
+      return;
+    }
 
-  useEffect(() => {
-    if (isLoading) toast.loading("Pending");
-    if (isSuccess) toast.success("Login Successfully");
-  }, [isLoading, isSuccess]);
+    try {
+      await mutateAsync({
+        email: values.email,
+        department,
+        password: values.password,
+      });
+    } catch {
+      // Error toast is handled in onError.
+    }
+  };
 
   return (
     <>
-      <h1>Login</h1>
-      <input
-        type="email"
-        name="email"
-        placeholder="Enter your Email"
-        value={email}
-        onChange={handleChange}
-        className="form-control mt-3 mb-3"
-      />
-      <select
-        name="department"
-        className="form-select  mt-3 mb-3"
-        value={selectedDepartment}
-        onChange={(e) => setSelectedDepartment(e.target.value)}
-      >
-        {departmentOptions.map((department) => (
-          <option key={department.id} value={department.department}>
-            {department.department}
-          </option>
-        ))}
-      </select>
-
-      <input
-        type="password"
-        name="password"
-        placeholder="Enter your Password"
-        value={password}
-        onChange={handleChange}
-        className="form-control  mt-3 mb-3"
-      />
-      <ButtonSpinner
-        className={
-          isLoading || isPending ? "spinner-border spinner-border-sm " : ""
-        }
-        btnClassname={`btn btn-outline-secondary w-100 my-3`}
-        buttonContent={`${isLoading || isPending ? "Logging in " : "Log-in "}`}
-        onClick={async (e) => {
-          e.preventDefault();
-          try {
-            await mutateAsync({
-              email,
-              department: selectedDepartment,
-              password,
-            });
-          } catch (err) {
-            console.log(err);
-          }
-        }}
-      />
-
-      {changeForm}
+      <h2 className="auth-form__title">Login</h2>
+      <div className="form-stack">
+        <TextField
+          label="Email"
+          type="email"
+          name="email"
+          placeholder="Enter your Email"
+          value={values.email}
+          onChange={handleChange}
+        />
+        <DepartmentSelect value={department} onChange={setDepartment} />
+        <TextField
+          label="Password"
+          type="password"
+          name="password"
+          placeholder="Enter your Password"
+          value={values.password}
+          onChange={handleChange}
+        />
+        <ButtonSpinner
+          btnClassname="btn btn-primary w-100"
+          buttonContent={isPending ? "Logging in " : "Log-in "}
+          isLoading={isPending}
+          onClick={handleLogin}
+        />
+      </div>
+      <div className="auth-form__switch">{changeForm}</div>
     </>
   );
 }

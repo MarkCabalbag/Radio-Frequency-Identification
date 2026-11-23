@@ -1,91 +1,64 @@
-import React, { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { useState } from "react";
 import Modal from "../../components/Modal";
+import Banner from "../../components/Banner";
+import ButtonSpinner from "../../components/ButtonSpinner";
 import CreateCardFormContent from "../CreateCardFormContent";
 import { useCreateCard } from "../../hooks/useRegisterAccount";
-import ButtonSpinner from "../../components/ButtonSpinner";
-import { toast } from "react-hot-toast";
-import { useQueryClient } from "@tanstack/react-query";
-import Banner from "../../components/Banner";
+import { useCardMutationCallbacks } from "../../hooks/useCardMutationCallbacks";
+
+const EMPTY_CARD = { card_id: "", card_user: "" };
+
 function RegisterCard({ registerCardButtonContent, className }) {
-  const queryClient = useQueryClient();
-  const navigate = useNavigate();
   const [showModal, setShowModal] = useState(false);
-  const [card, setCard] = useState({
-    _id: "",
-    card_id: "",
-    card_user: "",
-  });
-  const onSuccess = (data) => {
-    toast.success(data.message);
-    queryClient.invalidateQueries({ queryKey: ["card"] });
-    console.log(data);
+  const [card, setCard] = useState(EMPTY_CARD);
+
+  const { mutateAsync, isPending } = useCreateCard(useCardMutationCallbacks());
+
+  const handleAddCard = async () => {
+    try {
+      await mutateAsync({ card_id: card.card_id, card_user: card.card_user });
+    } catch {
+      // Error toast is handled in onError.
+    } finally {
+      // The modal closes and resets on both success and failure (existing behaviour).
+      setCard(EMPTY_CARD);
+      setShowModal(false);
+    }
   };
-  const onError = (error) => {
-    toast.error(error.message);
-    console.log(error);
-  };
-  const { mutateAsync, isLoading, isError, isPending } = useCreateCard({
-    onSuccess,
-    onError,
-  });
+
   return (
     <>
       <button
+        type="button"
         className={className}
-        onClick={() => {
-          console.log(showModal);
-          setShowModal(true);
-        }}
+        onClick={() => setShowModal(true)}
       >
         {registerCardButtonContent}
       </button>
-      {showModal && (
-        <Modal
-          modalTitle={"Register New Card"}
-          modalButton={
-            <>
-              <ButtonSpinner
-                btnClassname={"btn btn-primary"}
-                className={`${
-                  isLoading || isPending
-                    ? "spinner-border spinner-border-sm"
-                    : ""
-                } ms-2`}
-                onClick={async () => {
-                  try {
-                    await mutateAsync({
-                      card_id: card.card_id,
-                      card_user: card.card_user,
-                    });
-                    setCard({ card_id: "", card_user: "" });
-                    setShowModal(false);
-                  } catch (error) {
-                    console.log(error);
-                    setCard({ card_id: "", card_user: "" });
-                    setShowModal(false);
-                  }
-                }}
-                buttonContent={
-                  isLoading || isPending ? "Adding New Card" : "Add New Card"
-                }
-              />
-            </>
-          }
-          modalBody={
-            <>
-              <Banner />
-              <p className="fst-italic my-3">
-                <b>Note:</b> Registering a new card, the user ID must need to be
-                uniqued to the existing card.
-              </p>
-              <CreateCardFormContent card={card} setCard={setCard} />
-            </>
-          }
-          setShowModal={setShowModal}
-          showModal={showModal}
-        />
-      )}
+
+      <Modal
+        modalTitle="Register New Card"
+        showModal={showModal}
+        setShowModal={setShowModal}
+        modalButton={
+          <ButtonSpinner
+            btnClassname="btn btn-primary"
+            buttonContent={isPending ? "Adding New Card" : "Add New Card"}
+            isLoading={isPending}
+            onClick={handleAddCard}
+          />
+        }
+        modalBody={
+          <>
+            <Banner />
+            <p className="callout">
+              <b>Note:</b> Registering a new card, the user ID must need to be
+              uniqued to the existing card.
+            </p>
+            <CreateCardFormContent card={card} setCard={setCard} />
+          </>
+        }
+      />
     </>
   );
 }

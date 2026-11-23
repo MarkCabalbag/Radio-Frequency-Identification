@@ -1,27 +1,21 @@
-import React from "react";
-import { Link } from "react-router-dom";
+import { NavLink } from "react-router-dom";
 
+const TABS = [
+  { to: "/dashboard/home", label: "Home" },
+  { to: "/dashboard/registered-card", label: "Registered Cards" },
+];
+
+// NavLink adds the `active` class automatically; styling lives in custom.scss (.app-tabs).
 function Tab() {
   return (
-    <ul className="nav nav-tabs">
-      <li className="nav-item">
-        <Link
-          to="/dashboard/home"
-          style={{ color: "#800000" }}
-          className="nav-link"
-        >
-          Home
-        </Link>
-      </li>
-      <li className="nav-item">
-        <Link
-          to="/dashboard/registered-card"
-          style={{ color: "#800000" }}
-          className="nav-link"
-        >
-          Registered Cards
-        </Link>
-      </li>
+    <ul className="nav nav-tabs app-tabs">
+      {TABS.map(({ to, label }) => (
+        <li className="nav-item" key={to}>
+          <NavLink to={to} className="nav-link">
+            {label}
+          </NavLink>
+        </li>
+      ))}
     </ul>
   );
 }

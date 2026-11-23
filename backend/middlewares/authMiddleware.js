@@ -1,37 +1,27 @@
 const asyncHandler = require("express-async-handler");
-const Dean = require("../models/deanModel.js");
-const jwt = require("jsonwebtoken");
+const AppError = require("../utils/AppError.js");
+const { verifyToken } = require("../services/tokenService.js");
+const { findDeanById } = require("../services/deanService.js");
 
-const protect = asyncHandler(async (req, res, next) => {
-  let token;
+const protect = asyncHandler(async (req, _res, next) => {
+  const header = req.headers.authorization;
 
-  if (
-    req.headers.authorization &&
-    req.headers.authorization.startsWith("Bearer")
-  ) {
-    try {
-      // get token from header
-      token = req.headers.authorization.split(" ")[1];
-
-      //verify token if it has the user
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-      //get user from the dean
-      req.dean = await Dean.findById(decoded.id).select("-password");
-      next();
-    } catch (err) {
-      console.log(err);
-      res.status(401);
-      throw new Error("Not authorized");
-    }
+  if (!header || !header.startsWith("Bearer")) {
+    throw new AppError("Not Authorized, no token", 401);
   }
 
-  if (!token) {
-    res.status(401);
-    throw new Error("Not Authorized, no token");
+  let dean;
+  try {
+    const decoded = verifyToken(header.split(" ")[1]);
+    dean = await findDeanById(decoded.id);
+  } catch {
+    throw new AppError("Not authorized", 401);
   }
+
+  if (!dean) throw new AppError("Not authorized", 401);
+
+  req.dean = dean;
+  next();
 });
 
-module.exports = {
-  protect,
-};
+module.exports = { protect };

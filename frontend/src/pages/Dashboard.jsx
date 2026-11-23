@@ -1,65 +1,56 @@
-import { useEffect, useState } from "react";
-import { Outlet, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Outlet } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faAngleDown, faUserCircle } from "@fortawesome/free-solid-svg-icons";
 import Tab from "../components/navigation/Tab";
 import Footer from "../components/Footer";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import {
-  faBuilding,
-  faEnvelope,
-  faUser,
-  faUserCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import Modal from "../components/Modal";
-import Banner from "../components/Banner";
+import AccountInfoModal from "../content/AccountInfoModal";
+import { useRequireDean } from "../hooks/useRequireDean";
+
 function Dashboard() {
+  const dean = useRequireDean();
   const [showModal, setShowModal] = useState(false);
-  const dean = JSON.parse(localStorage.getItem("dean"));
 
-  const navigate = useNavigate();
-
-  //protect the dashboard by checking if it has a dean stored in the localStorage
-  useEffect(() => {
-    if (!dean) {
-      navigate("/auth");
-    }
-  }, [navigate, dean]);
+  // useRequireDean is redirecting to /auth.
+  if (!dean) return null;
 
   return (
     <>
-      {showModal && (
-        <Modal
-          modalTitle={"Account Info"}
-          setShowModal={setShowModal}
-          showModal={showModal}
-          modalBody={
-            <>
-              <Banner />
-              <p className="mt-4">
-                {<FontAwesomeIcon icon={faUser} />}
-                {""} {dean.firstname} {dean.lastname}
+      <AccountInfoModal
+        dean={dean}
+        showModal={showModal}
+        setShowModal={setShowModal}
+      />
+      <div className="page-content">
+        <header className="page-header">
+          <div className="container-sm">
+            <div className="page-header__row">
+              <h1 className="page-header__title">Dashboard</h1>
+              <p
+                onClick={() => setShowModal(true)}
+                className="account-trigger"
+                role="button"
+                title="Account Info"
+                aria-haspopup="dialog"
+              >
+                <FontAwesomeIcon
+                  icon={faUserCircle}
+                  className="account-trigger__icon"
+                />
+                <span>
+                  Hi <b>{dean.firstname}!</b>
+                </span>
+                <FontAwesomeIcon
+                  icon={faAngleDown}
+                  className="account-trigger__caret"
+                />
               </p>
-              <p>
-                {<FontAwesomeIcon icon={faEnvelope} />}
-                {""} {dean.email}
-              </p>
-              <p>
-                {<FontAwesomeIcon icon={faBuilding} />}
-                {""} {dean.department}
-              </p>
-            </>
-          }
-        />
-      )}
-      <div className="container-fluid">
-        <div className="container-sm container-md container-lg pt-3">
-          <Banner />
-          <div className="mt-4 d-flex justify-content-start gap-3">
-            <p onClick={() => setShowModal(true)} className="text-primary">
-              {<FontAwesomeIcon icon={faUserCircle} size={"2xl"} />} {""} Hi{" "}
-              <b className="fst-italic text-primary">{dean.firstname}!</b>
-            </p>
+            </div>
+            <Tab />
           </div>
-          <Tab />
+        </header>
+
+        <div className="container-sm page-body">
           <Outlet />
         </div>
       </div>

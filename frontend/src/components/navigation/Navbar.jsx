@@ -1,85 +1,84 @@
-import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser } from "@fortawesome/free-regular-svg-icons";
+import { faRightFromBracket } from "@fortawesome/free-solid-svg-icons";
+import { clearDean, getStoredDean } from "../../utils/session";
+import logo from "../../assets/logo.png";
 
-import {
-  faBuilding,
-  faEnvelope,
-  faRightFromBracket,
-  faUserCircle,
-} from "@fortawesome/free-solid-svg-icons";
-import Modal from "../Modal";
-const Navbar = () => {
-  const [showModal, setShowModal] = useState(false);
+function Navbar() {
   const navigate = useNavigate();
-  const dean = localStorage.getItem("dean");
+  const isLoggedIn = Boolean(getStoredDean());
+
   const handleLogout = () => {
-    localStorage.removeItem("dean");
+    clearDean();
     navigate("/");
   };
+
   return (
-    <nav className="navbar navbar-expand-lg  w-100 bg-primary">
-      <div
-        className="container-sm d-flex justify-content-between"
-        style={{ width: "100%" }}
-      >
-        <div
-          className="d-flex justify-content-between"
-          style={{ width: "100vw" }}
-        >
-          <div>
-            <a className="navbar-brand text-white" href="#">
-              RFID
-            </a>
-          </div>
-          <div>
-            <button
-              className="navbar-toggler bg-white"
-              type="button"
-              data-bs-toggle="collapse"
-              data-bs-target="#navbarSupportedContent"
-              aria-controls="navbarSupportedContent"
-            >
-              <span className="navbar-toggler-icon bg-white"></span>
-            </button>
-          </div>
-        </div>
-        <div className="collapse navbar-collapse" id="navbarSupportedContent">
-          <ul className="navbar-nav me-auto mb-lg-0 d-flex align-items-center justify-content-center gap-3">
-            {dean ? (
-              <>
+    <>
+      <nav className="navbar navbar-expand-lg navbar-dark app-navbar sticky-top">
+        <div className="container-sm">
+          <a className="navbar-brand" href="#">
+            <img src={logo} alt="" className="brand-mark brand-mark--nav" />
+            <span className="navbar-brand__text">
+              <span className="navbar-brand__name">
+                Ilocos Sur Polytechnic State College
+              </span>
+              <span className="navbar-brand__sub">
+                Radio Frequency Identification
+              </span>
+            </span>
+          </a>
+          <button
+            className="navbar-toggler"
+            type="button"
+            data-bs-toggle="collapse"
+            data-bs-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent"
+            aria-expanded="false"
+            aria-label="Toggle navigation"
+          >
+            <span className="navbar-toggler-icon"></span>
+          </button>
+
+          <div className="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul className="navbar-nav ms-lg-auto align-items-lg-center">
+              {isLoggedIn ? (
+                <>
+                  <li className="nav-item">
+                    <Link to="/dashboard/home" className="nav-link">
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li
+                    className="nav-item nav-link nav-link--action d-flex align-items-center gap-2"
+                    role="button"
+                    tabIndex={0}
+                    onClick={handleLogout}
+                    onKeyDown={(e) => e.key === "Enter" && handleLogout()}
+                  >
+                    Logout
+                    <FontAwesomeIcon icon={faRightFromBracket} />
+                  </li>
+                </>
+              ) : (
                 <li className="nav-item">
                   <Link
-                    to="/dashboard/home"
-                    className="text-decoration-none text-light"
+                    to="/auth"
+                    className="nav-link"
+                    aria-label="Sign in"
+                    title="Sign in"
                   >
-                    Dashboard
+                    <FontAwesomeIcon icon={faUser} />
                   </Link>
                 </li>
-                <li
-                  className="nav-item text-light d-flex align-items-center gap-2"
-                  onClick={() => handleLogout()}
-                >
-                  Logout
-                  <FontAwesomeIcon
-                    icon={faRightFromBracket}
-                    style={{ color: "white" }}
-                  />
-                </li>
-              </>
-            ) : (
-              <li className="nav-item">
-                <Link to="/auth" className="text-decoration-none text-light">
-                  <FontAwesomeIcon icon={faUser} style={{ color: "white" }} />
-                </Link>
-              </li>
-            )}
-          </ul>
+              )}
+            </ul>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+    </>
   );
-};
+}
 
 export default Navbar;

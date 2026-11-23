@@ -16,9 +16,7 @@ const cardSchema = mongoose.Schema(
       required: [true, "please add status"],
     },
   },
-  {
-    timestamps: true,
-  }
+  { timestamps: true }
 );
 
-module.exports = Card = mongoose.model("Card", cardSchema);
+module.exports = mongoose.model("Card", cardSchema);

@@ -1,3 +1,1324 @@
-$primary: #800000;
+// ============================================================================
+// RFID Card Management: government-portal design system
+//
+//  1. Tokens          2. Bootstrap overrides     3. Bootstrap + mixins
+//  4. CSS variables   5. Base                    6. Buttons / forms
+//  7. Header          8. Auth                    9. Page header + tabs
+// 10. Cards          11. States                 12. Skeletons
+// 13. Modal          14. Rationale              15. Footer
+// 16. Loader
+//
+// NOTE: .rfid-card, .card-grid and .card-rail must NOT use transform, filter,
+// contain or isolation. Each card holds a position:fixed modal (UpdateCard),
+// and those properties would trap the modal inside the card.
+// ============================================================================
+
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap");
+
+@import "../../node_modules/bootstrap/scss/functions";
+
+// ----------------------------------------------------------------------------
+// 1. Tokens
+// ----------------------------------------------------------------------------
+
+// Brand
+$brand: #8f1d2c;
+$brand-strong: #701422;
+$brand-deep: #35090f;
+$brand-tint: #fbeff0;
+$brand-line: #e9c8cd;
+
+// Accent: used for the header/footer rule and focus on dark surfaces only
+$gold: #f0b429;
+$gold-soft: #fdf3d6;
+
+// Neutrals
+$ink: #1b1b1b;
+$ink-muted: #4a4a4a;
+$ink-faint: #666666;
+$line: #d4d4d4;
+$line-strong: #757575;
+$page: #f2f2f2;
+$sand: #e8e8e8;
+$panel-alt: #f8f8f8;
+$surface: #ffffff;
+
+// Status (text/background pairs are >= 4.5:1)
+$online-text: #00582f;
+$online-bg: #e2f2e8;
+$online-dot: #00703c;
+$offline-text: #8a3b00;
+$offline-bg: #fdeedd;
+$offline-dot: #c25a00;
+
+// Type scale
+$fs-xs: 0.8125rem;
+$fs-sm: 0.9375rem;
+$fs-base: 1rem;
+$fs-lg: 1.1875rem;
+$fs-xl: 1.5rem;
+$fs-2xl: 2rem;
+$fs-3xl: 2.5rem;
+
+$font-body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+$font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+
+// ----------------------------------------------------------------------------
+// 2. Bootstrap variable overrides
+// ----------------------------------------------------------------------------
+
+$primary: $brand;
+$secondary: $ink-muted;
+$success: #00703c;
+$info: #2c5b7a;
+$warning: $gold;
+$danger: #b50e1f;
+$light: $panel-alt;
+$dark: $ink;
+
+$primary-bg-subtle: $brand-tint;
+$primary-border-subtle: $brand-line;
+
+$gray-100: $panel-alt;
+$gray-200: $sand;
+$gray-300: $line;
+$gray-400: #bdbdbd;
+$gray-500: #9a9a9a;
+$gray-600: $ink-faint;
+$gray-700: $ink-muted;
+$gray-800: #2f2f2f;
+$gray-900: $ink;
+
+$body-bg: $page;
+$body-color: $ink;
+$body-emphasis-color: #000;
+$body-secondary-color: $ink-muted;
+$body-secondary-bg: $sand;
+$body-tertiary-color: $ink-faint;
+$body-tertiary-bg: $panel-alt;
+
+$border-color: $line;
+$border-color-translucent: rgba($ink, 0.15);
+
+// Typography
+$font-family-sans-serif: $font-body;
+$font-family-monospace: $font-mono;
+$font-size-base: $fs-base;
+$line-height-base: 1.55;
+$headings-font-weight: 700;
+$headings-line-height: 1.2;
+$headings-margin-bottom: 0.75rem;
+$h1-font-size: $fs-3xl;
+$h2-font-size: $fs-2xl;
+$h3-font-size: $fs-xl;
+$h4-font-size: $fs-lg;
+$h5-font-size: $fs-base;
+$h6-font-size: $fs-sm;
+$code-color: $ink;
+
+// Links
+$link-color: $brand;
+$link-hover-color: $brand-strong;
+$link-decoration: underline;
+
+// Shape and shadow: flat
+$border-radius: 2px;
+$border-radius-sm: 2px;
+$border-radius-lg: 4px;
+$border-radius-xl: 4px;
+$border-radius-xxl: 4px;
+$box-shadow-sm: 0 1px 0 rgba(0, 0, 0, 0.06);
+$box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+$box-shadow-lg: 0 10px 28px rgba(0, 0, 0, 0.28);
+$grid-gutter-width: 2rem;
+
+// Focus: drawn with outlines in the stylesheet below, so Bootstrap's
+// box-shadow rings are switched off.
+$focus-ring-box-shadow: none;
+$input-btn-focus-box-shadow: none;
+$input-focus-box-shadow: none;
+$btn-close-focus-shadow: none;
+$navbar-toggler-focus-width: 0;
+
+// Buttons
+$btn-padding-y: 0.5rem;
+$btn-padding-x: 1.125rem;
+$btn-font-weight: 600;
+
+// Forms
+$input-padding-y: 0.5625rem;
+$input-padding-x: 0.875rem;
+$input-border-width: 2px;
+$input-border-color: $line-strong;
+$input-bg: $surface;
+$input-placeholder-color: $ink-faint;
+$input-focus-border-color: $ink;
+$input-disabled-bg: $sand;
+$form-label-margin-bottom: 0.375rem;
+$form-label-font-weight: 600;
+$form-label-color: $ink;
+$form-select-indicator-color: $ink-muted;
+
+// Cards
+$card-border-radius: 2px;
+$card-spacer-y: 1.25rem;
+$card-spacer-x: 1.25rem;
+
+// Navbar
+$navbar-dark-color: rgba(#fff, 0.92);
+$navbar-dark-hover-color: #fff;
+$navbar-dark-active-color: #fff;
+$navbar-dark-toggler-border-color: rgba(#fff, 0.6);
+
+// Modal
+$modal-content-border-radius: 4px;
+$modal-header-padding: 1rem 1.5rem;
+$modal-inner-padding: 1.5rem;
+$modal-footer-bg: $panel-alt;
+$modal-backdrop-bg: $ink;
+$modal-backdrop-opacity: 0.6;
+
+// ----------------------------------------------------------------------------
+// 3. Bootstrap + mixins
+// ----------------------------------------------------------------------------
 
 @import "../../node_modules/bootstrap/scss/bootstrap";
+
+@mixin focus-ring($offset: 2px) {
+  outline: 3px solid var(--rfid-focus);
+  outline-offset: $offset;
+}
+
+@mixin eyebrow {
+  font-size: $fs-xs;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+// ----------------------------------------------------------------------------
+// 4. CSS custom properties
+// ----------------------------------------------------------------------------
+
+:root {
+  --rfid-brand: #{$brand};
+  --rfid-brand-strong: #{$brand-strong};
+  --rfid-brand-deep: #{$brand-deep};
+  --rfid-brand-tint: #{$brand-tint};
+  --rfid-brand-line: #{$brand-line};
+  --rfid-gold: #{$gold};
+  --rfid-gold-soft: #{$gold-soft};
+
+  --rfid-page: #{$page};
+  --rfid-surface: #{$surface};
+  --rfid-panel-alt: #{$panel-alt};
+  --rfid-sand: #{$sand};
+  --rfid-line: #{$line};
+  --rfid-line-strong: #{$line-strong};
+  --rfid-ink: #{$ink};
+  --rfid-ink-muted: #{$ink-muted};
+  --rfid-ink-faint: #{$ink-faint};
+
+  --rfid-online-text: #{$online-text};
+  --rfid-online-bg: #{$online-bg};
+  --rfid-online-dot: #{$online-dot};
+  --rfid-offline-text: #{$offline-text};
+  --rfid-offline-bg: #{$offline-bg};
+  --rfid-offline-dot: #{$offline-dot};
+
+  --rfid-skeleton: #e2e2e2;
+  --rfid-focus: #{$ink};
+  --rfid-font-mono: #{inspect($font-mono)};
+}
+
+// ----------------------------------------------------------------------------
+// 5. Base
+// ----------------------------------------------------------------------------
+
+html {
+  scroll-padding-top: 6rem;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  letter-spacing: -0.01em;
+}
+
+a {
+  text-decoration-thickness: max(1px, 0.0625rem);
+  text-underline-offset: 0.2em;
+
+  &:hover {
+    text-decoration-thickness: 0.1875rem;
+  }
+}
+
+code {
+  font-family: var(--rfid-font-mono);
+}
+
+::selection {
+  background: var(--rfid-gold-soft);
+  color: var(--rfid-ink);
+}
+
+// Keyboard focus: Bootstrap sets `outline: 0` on several components, so those
+// are targeted explicitly.
+:focus-visible,
+.btn:focus-visible,
+.btn-close:focus-visible,
+.navbar-toggler:focus-visible,
+.nav-link:focus-visible {
+  @include focus-ring;
+  box-shadow: none;
+}
+
+.form-control:focus,
+.form-select:focus {
+  @include focus-ring(0);
+  box-shadow: none;
+}
+
+// Page shell: footer sits at the bottom, nothing relies on vh-100.
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.app-main {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.page-content {
+  flex: 1 0 auto;
+}
+
+.page-body {
+  padding-bottom: 2rem;
+}
+
+// `cursor-pointer` is not a Bootstrap class; defined here so existing markup works.
+.cursor-pointer {
+  cursor: pointer;
+}
+
+.eyebrow {
+  @include eyebrow;
+  color: var(--rfid-ink-muted);
+}
+
+.form-stack {
+  display: grid;
+  gap: 1.25rem;
+
+  &__row {
+    display: grid;
+    gap: 1.25rem;
+
+    @include media-breakpoint-up(sm) {
+      grid-template-columns: 1fr 1fr;
+    }
+  }
+}
+
+.field {
+  min-width: 0;
+}
+
+.callout {
+  margin: 1rem 0;
+  padding: 0.75rem 1rem;
+  background: var(--rfid-gold-soft);
+  border-left: 5px solid var(--rfid-gold);
+  color: var(--rfid-ink);
+  font-size: $fs-sm;
+}
+
+// Logo on a light plate so it stays legible on maroon.
+.brand-mark {
+  display: block;
+  flex: none;
+  padding: 0.2rem;
+  background: var(--rfid-surface);
+  border-radius: 50%;
+  object-fit: contain;
+
+  &--nav {
+    width: 2.75rem;
+    height: 2.75rem;
+  }
+
+  &--sm {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+}
+
+// Banner (used inside modals)
+.brand-banner {
+  display: flex;
+  align-items: center;
+  gap: 0.875rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid var(--rfid-line);
+
+  &__logo {
+    flex: none;
+    width: 3rem;
+    height: 3rem;
+    object-fit: contain;
+  }
+
+  &__kicker {
+    @include eyebrow;
+    margin: 0;
+    color: var(--rfid-ink-muted);
+  }
+
+  &__title {
+    margin: 0.125rem 0 0;
+    color: var(--rfid-brand);
+    font-size: $fs-base;
+    line-height: 1.3;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 6. Buttons / forms
+// ----------------------------------------------------------------------------
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
+  min-height: 2.75rem;
+  line-height: 1.25;
+}
+
+// Secondary: white with a dark outline
+.btn-outline-secondary {
+  --bs-btn-color: var(--rfid-ink);
+  --bs-btn-bg: var(--rfid-surface);
+  --bs-btn-border-color: var(--rfid-ink);
+  --bs-btn-hover-color: var(--rfid-ink);
+  --bs-btn-hover-bg: var(--rfid-sand);
+  --bs-btn-hover-border-color: var(--rfid-ink);
+  --bs-btn-active-color: var(--rfid-ink);
+  --bs-btn-active-bg: #d6d6d6;
+  --bs-btn-active-border-color: var(--rfid-ink);
+  --bs-btn-disabled-color: var(--rfid-ink-faint);
+  --bs-btn-disabled-bg: var(--rfid-surface);
+  --bs-btn-disabled-border-color: var(--rfid-line);
+}
+
+// Auto-refresh toggle while active
+.btn-live {
+  --bs-btn-color: var(--rfid-online-text);
+  --bs-btn-bg: var(--rfid-online-bg);
+  --bs-btn-border-color: var(--rfid-online-dot);
+  --bs-btn-hover-color: var(--rfid-online-text);
+  --bs-btn-hover-bg: #d0eadb;
+  --bs-btn-hover-border-color: var(--rfid-online-dot);
+  --bs-btn-active-color: var(--rfid-online-text);
+  --bs-btn-active-bg: #c2e2d0;
+  --bs-btn-active-border-color: var(--rfid-online-dot);
+
+  &::before {
+    content: "";
+    width: 0.5rem;
+    height: 0.5rem;
+    margin-right: 0.5rem;
+    background: var(--rfid-online-dot);
+    border-radius: 50%;
+
+    @media (prefers-reduced-motion: no-preference) {
+      animation: rfid-pulse 2s ease-out infinite;
+    }
+  }
+}
+
+@keyframes rfid-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba($online-dot, 0.5);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 0.4rem rgba($online-dot, 0);
+  }
+}
+
+.form-control,
+.form-select {
+  min-height: 2.75rem;
+  @include transition(border-color 0.15s ease);
+
+  &:hover:not(:focus):not(:disabled) {
+    border-color: var(--rfid-ink);
+  }
+}
+
+.form-label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: $fs-sm;
+
+  .svg-inline--fa {
+    color: var(--rfid-ink-faint);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 7. Header (utility strip + navbar)
+// ----------------------------------------------------------------------------
+
+.gov-strip {
+  padding: 0.5rem 0;
+  background: var(--rfid-sand);
+  border-bottom: 1px solid var(--rfid-line);
+  color: var(--rfid-ink-muted);
+  font-size: $fs-xs;
+  line-height: 1.2;
+}
+
+.app-navbar {
+  --rfid-focus: #{$gold};
+  padding: 0;
+  background: var(--rfid-brand);
+  border-bottom: 4px solid var(--rfid-gold);
+
+  > .container-sm {
+    padding-block: 0.75rem;
+  }
+
+  .navbar-brand {
+    display: flex;
+    flex: 0 1 auto;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    color: #fff;
+    white-space: normal;
+
+    &__text {
+      display: flex;
+      flex-direction: column;
+      min-width: 0;
+      line-height: 1.2;
+    }
+
+    &__name {
+      font-size: $fs-sm;
+      font-weight: 700;
+
+      @include media-breakpoint-up(md) {
+        font-size: $fs-lg;
+      }
+    }
+
+    &__sub {
+      margin-top: 0.125rem;
+      color: rgba(#fff, 0.82);
+      font-size: $fs-xs;
+    }
+  }
+
+  .navbar-toggler {
+    border-width: 2px;
+    @include transition(background-color 0.15s ease);
+
+    &:hover {
+      background: rgba(#fff, 0.14);
+    }
+  }
+
+  .nav-link {
+    padding: 0.75rem 1rem;
+    font-weight: 600;
+    @include transition(color 0.15s ease);
+
+    &:hover {
+      color: #fff;
+      text-decoration: underline;
+      text-decoration-color: var(--rfid-gold);
+      text-decoration-thickness: 3px;
+      text-underline-offset: 0.45em;
+    }
+  }
+
+  .nav-link--action {
+    cursor: pointer;
+    user-select: none;
+  }
+
+  @include media-breakpoint-down(lg) {
+    .navbar-collapse {
+      margin-top: 0.75rem;
+      border-top: 1px solid rgba(#fff, 0.25);
+    }
+
+    .nav-link {
+      padding-inline: 0;
+      border-bottom: 1px solid rgba(#fff, 0.14);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 8. Auth page
+// ----------------------------------------------------------------------------
+
+.auth-page {
+  display: flex;
+  flex: 1 0 auto;
+  align-items: center;
+  padding-block: 2rem;
+
+  @include media-breakpoint-up(md) {
+    padding-block: 4rem;
+  }
+}
+
+.auth-layout {
+  display: grid;
+  gap: 2rem;
+  align-items: center;
+  width: 100%;
+
+  @include media-breakpoint-up(md) {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 26rem);
+    gap: 3rem;
+  }
+
+  @include media-breakpoint-up(lg) {
+    gap: 5rem;
+  }
+}
+
+.auth-intro {
+  &__logo {
+    width: 4rem;
+    height: auto;
+    margin-bottom: 1.25rem;
+
+    @include media-breakpoint-up(md) {
+      width: 6rem;
+      margin-bottom: 1.75rem;
+    }
+  }
+
+  &__kicker {
+    @include eyebrow;
+    margin: 0 0 0.75rem;
+    color: var(--rfid-brand);
+  }
+
+  &__title {
+    margin: 0 0 1rem;
+    font-size: $fs-2xl;
+
+    @include media-breakpoint-up(md) {
+      font-size: $fs-3xl;
+    }
+  }
+
+  &__text {
+    max-width: 30rem;
+    margin: 0;
+    color: var(--rfid-ink-muted);
+    font-size: $fs-lg;
+  }
+}
+
+.auth-panel {
+  padding: 1.5rem;
+  background: var(--rfid-surface);
+  border: 1px solid var(--rfid-line);
+  border-top: 4px solid var(--rfid-brand);
+
+  @include media-breakpoint-up(md) {
+    padding: 2rem;
+  }
+}
+
+.auth-form {
+  width: 100%;
+
+  &__title {
+    margin-bottom: 1.5rem;
+    font-size: $fs-xl;
+  }
+
+  &__switch {
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--rfid-line);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 9. Page header + tabs
+// ----------------------------------------------------------------------------
+
+.page-header {
+  padding-top: 1.5rem;
+  background: var(--rfid-surface);
+  border-bottom: 1px solid var(--rfid-line);
+
+  &__row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-bottom: 1.25rem;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: $fs-2xl;
+
+    @include media-breakpoint-up(md) {
+      font-size: $fs-3xl;
+    }
+  }
+}
+
+.account-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.625rem;
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.375rem 0.875rem 0.375rem 0.625rem;
+  background: var(--rfid-surface);
+  border: 2px solid var(--rfid-line-strong);
+  border-radius: 2px;
+  color: var(--rfid-ink);
+  cursor: pointer;
+  font-weight: 500;
+  line-height: 1.2;
+  user-select: none;
+  @include transition(border-color 0.15s ease, background-color 0.15s ease);
+
+  &__icon {
+    color: var(--rfid-brand);
+    font-size: 1.5rem;
+  }
+
+  &__caret {
+    color: var(--rfid-ink-muted);
+    font-size: 0.875rem;
+  }
+
+  b {
+    color: var(--rfid-brand);
+    font-weight: 700;
+  }
+
+  &:hover {
+    background: var(--rfid-brand-tint);
+    border-color: var(--rfid-brand);
+  }
+
+  &:active {
+    background: var(--rfid-brand-line);
+  }
+}
+
+.app-tabs {
+  flex-wrap: nowrap;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 0;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-link {
+    margin: 0;
+    padding: 0.75rem 1rem;
+    background: transparent;
+    border: 0;
+    border-bottom: 4px solid transparent;
+    border-radius: 0;
+    color: var(--rfid-ink-muted);
+    font-weight: 600;
+    white-space: nowrap;
+    @include transition(color 0.15s ease, background-color 0.15s ease, border-color 0.15s ease);
+
+    &:hover {
+      background: var(--rfid-sand);
+      border-bottom-color: var(--rfid-line-strong);
+      color: var(--rfid-ink);
+    }
+
+    &:focus-visible {
+      outline-offset: -3px;
+    }
+
+    &.active {
+      background: transparent;
+      border-bottom-color: var(--rfid-brand);
+      color: var(--rfid-brand);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 10. Card toolbar, grid, rail, card, status tag
+// ----------------------------------------------------------------------------
+
+.card-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 1.75rem 0 1.25rem;
+
+  &__title {
+    display: flex;
+    align-items: center;
+    margin: 0;
+    font-size: $fs-xl;
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+
+    @include media-breakpoint-down(sm) {
+      width: 100%;
+      flex-direction: column;
+
+      .btn {
+        width: 100%;
+      }
+    }
+  }
+}
+
+.count-tag {
+  min-width: 1.75rem;
+  margin-left: 0.625rem;
+  padding: 0.0625rem 0.5rem;
+  background: var(--rfid-sand);
+  border-radius: 2px;
+  color: var(--rfid-ink);
+  font-size: $fs-sm;
+  font-weight: 600;
+  text-align: center;
+}
+
+// Registered Cards: responsive grid
+.card-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 20rem), 1fr));
+  padding-bottom: 2rem;
+}
+
+// Home: horizontal scroller that bleeds to the container edges
+.card-rail {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: min(85%, 19rem);
+  gap: 1rem;
+  margin-inline: calc(var(--bs-gutter-x, 2rem) * -0.5);
+  padding: 0.25rem calc(var(--bs-gutter-x, 2rem) * 0.5) 1rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-padding-inline: calc(var(--bs-gutter-x, 2rem) * 0.5);
+  scroll-snap-type: x proximity;
+  scrollbar-color: var(--rfid-line-strong) transparent;
+  scrollbar-width: thin;
+
+  > * {
+    scroll-snap-align: start;
+  }
+}
+
+.rfid-card {
+  --status: var(--rfid-online-dot);
+  --bs-card-bg: var(--rfid-surface);
+  --bs-card-border-color: var(--rfid-line);
+  --bs-card-border-radius: 2px;
+  --bs-card-inner-border-radius: 1px;
+  min-width: 0;
+  border-top: 4px solid var(--status);
+  @include transition(border-color 0.15s ease);
+
+  &--offline {
+    --status: var(--rfid-offline-dot);
+  }
+
+  @media (hover: hover) {
+    &:not(.rfid-card--skeleton):hover {
+      border-inline-color: var(--rfid-ink-faint);
+      border-bottom-color: var(--rfid-ink-faint);
+    }
+  }
+
+  &--skeleton {
+    --status: var(--rfid-line-strong);
+    pointer-events: none;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding: 1.25rem;
+  }
+
+  &__top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+
+  &__user {
+    margin: 0.25rem 0 0.5rem;
+    font-size: $fs-xl;
+    line-height: 1.2;
+    overflow-wrap: anywhere;
+  }
+
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.75rem;
+    margin: 0;
+    padding-top: 0.875rem;
+    border-top: 1px solid var(--rfid-line);
+
+    dt,
+    dd {
+      margin: 0;
+    }
+
+    code {
+      color: var(--rfid-ink);
+      font-size: $fs-base;
+      font-weight: 500;
+      letter-spacing: 0.02em;
+      word-break: break-all;
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    padding: 1rem 1.25rem;
+    background: var(--rfid-panel-alt);
+    border-top: 1px solid var(--rfid-line);
+
+    > .btn:first-child {
+      flex: 1 1 12rem;
+    }
+  }
+}
+
+.status-tag {
+  --tag-bg: var(--rfid-online-bg);
+  --tag-fg: var(--rfid-online-text);
+  --tag-dot: var(--rfid-online-dot);
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.1875rem 0.5rem;
+  background: var(--tag-bg);
+  border-radius: 2px;
+  color: var(--tag-fg);
+  font-size: $fs-xs;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  line-height: 1.3;
+  text-transform: uppercase;
+  white-space: nowrap;
+
+  &::before {
+    content: "";
+    flex: none;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: var(--tag-dot);
+    border-radius: 50%;
+  }
+
+  &--offline {
+    --tag-bg: var(--rfid-offline-bg);
+    --tag-fg: var(--rfid-offline-text);
+    --tag-dot: var(--rfid-offline-dot);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 11. State panels (empty / error)
+// ----------------------------------------------------------------------------
+
+.state-panel {
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 1.75rem 0;
+  padding: 1.5rem;
+  background: var(--rfid-surface);
+  border: 1px solid var(--rfid-line);
+  border-left: 5px solid var(--rfid-brand);
+
+  &__icon {
+    display: grid;
+    flex: none;
+    place-items: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    background: var(--rfid-brand-tint);
+    border-radius: 2px;
+    color: var(--rfid-brand);
+    font-size: 1.125rem;
+  }
+
+  &__body {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+
+  &__title {
+    margin: 0;
+    font-size: $fs-xl;
+  }
+
+  &__text {
+    margin: 0;
+    color: var(--rfid-ink-muted);
+    overflow-wrap: anywhere;
+
+    &:empty {
+      display: none;
+    }
+  }
+
+  &--error {
+    border: 4px solid var(--bs-danger);
+
+    .state-panel__icon {
+      background: var(--bs-danger);
+      color: #fff;
+    }
+
+    .state-panel__title {
+      color: var(--bs-danger);
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 12. Skeletons (mirror the card layout)
+// ----------------------------------------------------------------------------
+
+.placeholder {
+  background-color: var(--rfid-skeleton);
+  border-radius: 2px;
+  opacity: 1;
+}
+
+.skeleton-heading {
+  display: block;
+  width: 9rem;
+  height: 1.75rem;
+}
+
+.skeleton-eyebrow {
+  display: block;
+  width: 5.5rem;
+  height: 0.8125rem;
+}
+
+.skeleton-tag {
+  display: block;
+  width: 4.5rem;
+  height: 1.375rem;
+}
+
+.skeleton-title {
+  display: block;
+  width: 65%;
+  height: 1.5rem;
+  margin: 0.25rem 0 0.5rem;
+}
+
+.skeleton-meta {
+  display: flex;
+  gap: 0.75rem;
+  padding-top: 0.875rem;
+  border-top: 1px solid var(--rfid-line);
+
+  span {
+    display: block;
+    height: 1.25rem;
+  }
+
+  span:first-child {
+    width: 4rem;
+  }
+
+  span:last-child {
+    width: 40%;
+  }
+}
+
+.skeleton-button {
+  display: block;
+  width: 11rem;
+  height: 2.75rem;
+
+  &--wide {
+    width: 17rem;
+  }
+
+  &--fill {
+    flex: 1 1 12rem;
+    width: auto;
+  }
+
+  &--short {
+    flex: 0 0 7rem;
+    width: 7rem;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 13. Modal
+// ----------------------------------------------------------------------------
+
+.app-modal {
+  border: 0;
+  box-shadow: var(--bs-box-shadow-lg);
+
+  .modal-header {
+    --rfid-focus: #{$gold};
+    background: var(--rfid-brand);
+    border-bottom: 4px solid var(--rfid-gold);
+    border-radius: 4px 4px 0 0;
+    color: #fff;
+  }
+
+  .modal-title {
+    color: #fff;
+    font-size: $fs-lg;
+  }
+
+  .modal-footer {
+    border-top: 1px solid var(--rfid-line);
+    border-radius: 0 0 4px 4px;
+  }
+}
+
+.info-list {
+  margin: 0.5rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    align-items: center;
+    gap: 0.875rem;
+    min-width: 0;
+    padding: 0.875rem 0;
+    border-bottom: 1px solid var(--rfid-line);
+    overflow-wrap: anywhere;
+  }
+
+  li:last-child {
+    border-bottom: 0;
+  }
+
+  &__icon {
+    flex: none;
+    width: 1.25rem;
+    color: var(--rfid-brand);
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 14. Home rationale
+// ----------------------------------------------------------------------------
+
+.rationale {
+  margin: 2rem 0 3rem;
+  padding: 1.5rem;
+  background: var(--rfid-surface);
+  border: 1px solid var(--rfid-line);
+
+  @include media-breakpoint-up(md) {
+    padding: 2.5rem;
+  }
+
+  &__title {
+    max-width: 38rem;
+    margin-bottom: 1rem;
+    font-size: $fs-xl;
+  }
+
+  &__body {
+    max-width: 44rem;
+    margin: 0;
+    font-size: 1.0625rem;
+    line-height: 1.75;
+  }
+
+  &__em {
+    color: var(--rfid-brand);
+    font-weight: 600;
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 15. Footer
+// ----------------------------------------------------------------------------
+
+.app-footer {
+  --rfid-focus: #{$gold};
+  margin-top: auto;
+  padding-top: 2.5rem;
+  background: var(--rfid-brand-deep);
+  border-top: 4px solid var(--rfid-gold);
+  color: #eadfdf;
+
+  &__brand {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding-bottom: 2rem;
+    border-bottom: 1px solid rgba(#fff, 0.16);
+  }
+
+  &__name {
+    margin: 0;
+    color: #fff;
+    font-size: $fs-lg;
+    font-weight: 700;
+    line-height: 1.25;
+  }
+
+  &__sub {
+    @include eyebrow;
+    margin: 0.25rem 0 0;
+    color: rgba(#fff, 0.72);
+  }
+
+  &__grid {
+    padding-block: 2.5rem;
+  }
+
+  &__about {
+    max-width: 34rem;
+    margin: 0;
+    color: rgba(#fff, 0.78);
+    font-size: $fs-sm;
+    line-height: 1.7;
+  }
+
+  &__legal {
+    padding-block: 1.25rem;
+    border-top: 1px solid rgba(#fff, 0.16);
+    color: rgba(#fff, 0.72);
+    font-size: $fs-xs;
+
+    p {
+      margin: 0;
+    }
+  }
+}
+
+.footer-heading {
+  @include eyebrow;
+  margin-bottom: 1rem;
+  padding-bottom: 0.625rem;
+  border-bottom: 2px solid var(--rfid-gold);
+  color: #fff;
+  font-family: var(--bs-body-font-family);
+}
+
+.footer-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.footer-item {
+  color: inherit;
+  font-size: $fs-sm;
+  text-decoration: none;
+
+  &__icon {
+    margin-right: 0.125rem;
+    color: rgba(#fff, 0.6);
+  }
+
+  &--link {
+    align-self: flex-start;
+
+    &:hover {
+      color: #fff;
+      text-decoration: underline;
+    }
+  }
+}
+
+// ----------------------------------------------------------------------------
+// 16. Page loader
+// ----------------------------------------------------------------------------
+
+.page-loader {
+  display: flex;
+  flex: 1 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  min-height: 60vh;
+  color: var(--rfid-brand);
+
+  &__logo {
+    width: 5rem;
+    height: auto;
+  }
+
+  &__message {
+    margin: 0;
+    color: var(--rfid-ink);
+    font-size: $fs-lg;
+    font-weight: 600;
+  }
+}

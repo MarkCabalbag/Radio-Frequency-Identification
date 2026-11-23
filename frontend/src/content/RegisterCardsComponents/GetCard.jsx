@@ -1,161 +1,98 @@
-import React, { useEffect, useState } from "react";
-import toast from "react-hot-toast";
-import { useFetchCard } from "../../hooks/useRegisterAccount";
-import UpdateCard from "./UpdateCard";
-import { useQueryClient } from "@tanstack/react-query";
-import ButtonSpinner from "../../components/ButtonSpinner";
-import RegisterCard from "./RegisterCard";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faIdCard, faUser } from "@fortawesome/free-solid-svg-icons";
-import Modal from "../../components/Modal";
-import Banner from "../../components/Banner";
+import {
+  faIdCard,
+  faTriangleExclamation,
+} from "@fortawesome/free-solid-svg-icons";
+import { useFetchCard } from "../../hooks/useRegisterAccount";
+import { useAutoRefresh } from "../../hooks/useAutoRefresh";
+import RegisterCard from "./RegisterCard";
+import AutoRefreshControls from "./AutoRefreshControls";
+import CardItem from "./CardItem";
+
+// Prop names are unchanged so Home and RegisteredCard keep working:
+//   className    -> wrapper around the card list ("card-rail" / "card-grid")
+//   hideButtons  -> class for the update/delete area ("d-none" on Home)
+//   statusElement-> placeholder shown while loading
+//   width        -> optional style object applied to each card (legacy)
 function GetCard({ className, hideButtons, statusElement, width }) {
-  const [showModal, setShowModal] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(0);
-  const [isActivateClick, setActivateClick] = useState(true);
-  const queryClient = useQueryClient();
-  const onSuccess = (data) => {
-    console.log(data);
-    setShowModal(false);
-    queryClient.invalidateQueries({ queryKey: ["card"] });
-    toast.success(data.message);
-  };
-
-  const onError = (error) => {
-    console.log(error);
-    toast.error(error.message);
-  };
-
-  const handleDeactivate = () => {
-    setRefreshInterval(0);
-    setActivateClick(false);
-    console.log("1min automatic refresh deactivated");
-  };
-
-  const handleActivate = () => {
-    setShowModal(false);
-    setRefreshInterval(60000);
-    setActivateClick(false);
-    console.log("1min automatic refresh activated");
-  };
-
+  const { isEnabled, refetchInterval, enable, disable } = useAutoRefresh();
   const {
-    data: cardData,
-    isLoading,
-    isPending,
+    data: cards,
     isFetching,
-  } = useFetchCard({
-    onSuccess,
-    onError,
-    refetchInterval: refreshInterval,
-  });
+    isError,
+    error,
+    refetch,
+  } = useFetchCard({ refetchInterval });
+
+  if (isFetching) return statusElement;
+
+  if (isError || !Array.isArray(cards)) {
+    return (
+      <div className="state-panel state-panel--error" role="alert">
+        <span className="state-panel__icon">
+          <FontAwesomeIcon icon={faTriangleExclamation} />
+        </span>
+        <div className="state-panel__body">
+          <h2 className="state-panel__title">Could not load cards</h2>
+          <p className="state-panel__text">{error?.message}</p>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => refetch()}
+          >
+            Try again
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (cards.length === 0) {
+    return (
+      <div className="state-panel">
+        <span className="state-panel__icon">
+          <FontAwesomeIcon icon={faIdCard} />
+        </span>
+        <div className="state-panel__body">
+          <h2 className="state-panel__title">No cards available :</h2>
+          <RegisterCard
+            registerCardButtonContent="Register your first card :)"
+            className="btn btn-primary"
+          />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>
-      {showModal && (
-        <Modal
-          showModal={showModal}
-          setShowModal={setShowModal}
-          modalTitle={"Activate Refresh Every 1min"}
-          modalBody={
-            <>
-              <Banner />
-              <p className="fst-italic mt-3">
-                <b>Note:</b> After activating this feature, you will experince
-                automatic refresh every one minute. Are you sure to activate
-                this feature?
-              </p>
-            </>
-          }
-          modalButton={
-            <ButtonSpinner
-              buttonContent={"Activate"}
-              btnClassname={"btn btn-warning"}
-              onClick={handleActivate}
-            />
-          }
-        />
-      )}
-      {isFetching || isLoading ? (
-        <>{statusElement}</>
-      ) : (
-        <>
-          {cardData.length === 0 ? (
-            <div className="d-flex align-items-center flex-column justify-content-center">
-              <h1>No cards available :</h1>
-              {
-                <RegisterCard
-                  registerCardButtonContent={"Register your first card :)"}
-                />
-              }
-            </div>
-          ) : (
-            <>
-              <div className="d-flex gap-2 align-items-center">
-                <RegisterCard
-                  registerCardButtonContent={"Register New Card"}
-                  className={"btn btn-warning mt-4"}
-                />
-                <ButtonSpinner
-                  buttonContent={
-                    isActivateClick
-                      ? "Activate automatic refresh for every 1min"
-                      : "Cancel Automatic Refresh"
-                  }
-                  btnClassname={
-                    isActivateClick
-                      ? "btn btn-primary mt-4"
-                      : "btn btn-info mt-4"
-                  }
-                  onClick={() => {
-                    if (isActivateClick) {
-                      setShowModal(true);
-                      setActivateClick(true);
-                      setRefreshInterval(6000);
-                      console.log("1min automatic refresh activated");
-                    } else {
-                      setActivateClick(true);
-                      setRefreshInterval(0);
-                      console.log("1min automatic refresh deactivated");
-                    }
-                  }}
-                />
-              </div>
+      <div className="card-toolbar">
+        <h2 className="card-toolbar__title">
+          Cards <span className="count-tag">{cards.length}</span>
+        </h2>
+        <div className="card-toolbar__actions">
+          <RegisterCard
+            registerCardButtonContent="Register New Card"
+            className="btn btn-primary"
+          />
+          <AutoRefreshControls
+            isEnabled={isEnabled}
+            onEnable={enable}
+            onDisable={disable}
+          />
+        </div>
+      </div>
 
-              <div key={cardData.card_id} className={className}>
-                {cardData?.map((card) => (
-                  <div key={card.card_id}>
-                    <div className="card my-2" key={card.card_id} style={width}>
-                      <div className="card-body">
-                        <h2>
-                          {<FontAwesomeIcon icon={faUser} />} Card User:{" "}
-                          {card.card_user}
-                        </h2>
-                        <p>
-                          {<FontAwesomeIcon icon={faIdCard} />} Card ID:{" "}
-                          {card.card_id}
-                        </p>
-                        <span
-                          className={
-                            card.card_status === "Offline"
-                              ? "badge text-bg-danger"
-                              : "badge text-bg-success"
-                          }
-                        >
-                          {card.card_status}
-                        </span>
-                      </div>
-                      <div className={hideButtons}>
-                        {<UpdateCard card={card} />}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </>
-          )}
-        </>
-      )}
+      <div className={className}>
+        {cards.map((card) => (
+          <CardItem
+            key={card._id ?? card.card_id}
+            card={card}
+            width={width}
+            actionsClassName={hideButtons}
+          />
+        ))}
+      </div>
     </>
   );
 }
