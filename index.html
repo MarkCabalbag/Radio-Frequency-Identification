@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RFID Door Lock — Device + Dashboard Showcase</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#0b0b0b;--panel:#111;--line:#2a2a2a;--tx:#f2f2f2;--mu:#8a8a8a;color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:14px/1.45 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+header{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px;padding:18px 24px;border-bottom:1px solid var(--line)}
+h1{font-size:1.15rem;font-weight:600;letter-spacing:-.01em;margin:0}
+.sub{color:var(--mu);font-size:.8rem;margin-top:2px;max-width:560px}
+.flow{display:flex;align-items:center;gap:6px;color:var(--mu);font-size:.75rem;flex-wrap:wrap}
+.flow span{padding:4px 11px;border:1px solid var(--line);border-radius:999px;transition:.2s;white-space:nowrap}
+.flow span.hot{background:#fff;color:#000;border-color:#fff}
+.flow i{font-style:normal;opacity:.5}
+.hc{display:flex;align-items:center;gap:16px}
+.hc label,.ctl label{color:var(--mu);font-size:.8rem;display:flex;align-items:center;gap:8px}
+input[type=range]{accent-color:#fff}
+input[type=checkbox]{accent-color:#fff}
+.btn{font:500 .85rem system-ui,sans-serif;background:transparent;color:var(--tx);border:1px solid #3a3a3a;border-radius:6px;padding:8px 14px;cursor:pointer}
+.btn:hover:not(:disabled){border-color:#888}
+.btn.pri{background:#fff;color:#000;border-color:#fff;font-weight:600}
+.btn.stop{background:transparent;color:#fff;border-color:#fff}
+.btn.big{padding:10px 26px;font-size:.9rem}
+.btn:disabled{opacity:.35;cursor:not-allowed}
+.wrap{display:flex;padding:20px 24px;align-items:flex-start}
+#dev{flex:0 0 var(--lw,44%);min-width:380px}#right{flex:1;min-width:380px}
+.split{flex:0 0 24px;align-self:stretch;display:flex;align-items:center;justify-content:center;cursor:col-resize;touch-action:none;outline:none}
+.split i{width:3px;height:56px;border-radius:2px;background:#333}.split:hover i,.split:focus i,.split.d i{background:#fff}
+.wrap.d iframe{pointer-events:none}.wrap.d{user-select:none}
+@media(max-width:900px){.wrap{flex-direction:column;gap:16px}#dev,#right{flex:none;width:100%;min-width:0}.split{display:none}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.bar{display:flex;align-items:center;gap:10px;padding:10px 14px;border-bottom:1px solid var(--line);font-size:.75rem;color:var(--tx);font-weight:500}
+.bar .url{flex:1;text-align:right;color:var(--mu);font-weight:400;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dot{width:8px;height:8px;border-radius:50%;background:#555}
+#chip{margin-left:auto;color:var(--mu);font-weight:400}#chip.on{color:#fff}
+svg.hw{display:block;width:100%;height:auto;background:#0b0b0b}
+.ctl{display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:12px 14px 6px}
+.tl{padding:6px 14px 0;color:var(--mu);font-size:.75rem}
+#tray{display:flex;flex-wrap:wrap;gap:8px;padding:8px 14px 4px}
+.chip{display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:7px 12px;font-size:.78rem;text-align:left;line-height:1.25}
+.chip small{font:.66rem 'Space Mono',monospace;color:var(--mu)}
+.chip.unk{border-style:dashed}
+#ser{height:170px;overflow:auto;margin:10px 14px 14px;padding:10px;background:#000;border:1px solid var(--line);border-radius:6px;font:.7rem/1.5 'Space Mono',monospace;color:#9a9a9a;word-break:break-all}
+#ser .r{color:#fff;font-weight:700}#ser .y{color:#ccc}#ser .b{color:#777}
+iframe{width:100%;height:880px;border:0;display:block;background:#f0f0f0}
+
+/* device state classes */
+.lb{font:700 8px 'Space Mono',monospace;fill:#fff}
+.pn{font:6px 'Space Mono',monospace;fill:#bbb}
+#card{opacity:0;transform:translate(235px,60px);transition:transform var(--dur,.7s) cubic-bezier(.4,0,.2,1),opacity var(--dur,.7s)}
+#dev.tap #card{opacity:1;transform:translate(55px,53px)}
+#dev.rd #coil{filter:drop-shadow(0 0 5px #7df9ff)}
+#dev.rd #coil rect{stroke:#7df9ff}
+#door{transform-origin:391px 116px;transition:transform var(--dur,.9s) ease}
+#dev.open #door{transform:scaleX(.2)}
+#horn{transform-origin:400px 293px;transition:transform var(--dur,.9s) ease}
+#dev.open #horn{transform:rotate(90deg)}
+#roomtxt{opacity:0;transition:opacity .5s}#dev.open #roomtxt{opacity:1}
+#net{opacity:0}#dev.net #net{opacity:1;animation:bl .5s infinite}
+#dev.net #wifiled{fill:#9fd4ff}
+@keyframes bl{50%{opacity:.25}}
+#dev.run #pwr{animation:bl 1.6s infinite}
+</style>
+</head>
+<body>
+<header>
+  <div><h1>This is how the RFID door lock and website work</h1><div class="sub">Press Play, then tap a card on the reader. Watch the ESP32 check it against the website's database, move the servo, and update the dashboard.</div></div>
+  <div class="flow"><span id="f1" title="RC522 reads the card UID">1 Tap</span><i>→</i><span id="f2" title="GET /card/getCard over WiFi">2 Verify</span><i>→</i><span id="f3" title="Servo turns the latch">3 Lock / Unlock</span><i>→</i><span id="f4" title="PUT /card/updateCardArduino">4 Sync</span></div>
+  <div class="hc"><label>Speed <span id="spv">1×</span><input type="range" id="spd" min=".5" max="4" step=".5" value="1"></label><button class="btn pri big" id="simBtn">▶ Play</button></div>
+</header>
+
+<div class="wrap">
+  <section class="card" id="dev">
+    <div class="bar"><span class="dot"></span>IoT device · ESP32 + RC522 + servo<span id="chip">● POWERED OFF</span></div>
+    <svg class="hw" viewBox="0 0 520 500" role="img" aria-label="Simulated RFID door lock hardware">
+      <defs><linearGradient id="pcb" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2556b8"/><stop offset="1" stop-color="#163a85"/></linearGradient></defs>
+
+      <g fill="none" stroke-width="3" stroke-linecap="round">
+        <path d="M40 172 C40 240 120 271.5 180 271.5" stroke="#f1c40f"/>
+        <path d="M58 172 C58 252 130 293.5 180 293.5" stroke="#e67e22"/>
+        <path d="M76 172 C76 262 135 315.5 180 315.5" stroke="#3498db"/>
+        <path d="M94 172 C94 270 140 337.5 180 337.5" stroke="#9b59b6"/>
+        <path d="M148 172 C148 270 150 359.5 180 359.5" stroke="#2ecc71"/>
+        <path d="M130 172 C130 280 145 381.5 180 381.5" stroke="#666"/>
+        <path d="M166 172 C166 290 160 403.5 180 403.5" stroke="#e74c3c"/>
+        <path d="M372 296 C352 296 352 293.5 330 293.5" stroke="#f39c12"/>
+        <path d="M372 306 C352 306 352 326.5 330 326.5" stroke="#e74c3c"/>
+        <path d="M372 316 C352 316 352 359.5 330 359.5" stroke="#8a5a3a"/>
+      </g>
+
+      <!-- RC522 reader -->
+      <rect x="20" y="30" width="180" height="142" rx="6" fill="url(#pcb)" stroke="#0e2f66" stroke-width="2"/>
+      <g id="coil" fill="none" stroke-width="2">
+        <rect x="50" y="46" width="120" height="76" rx="4" stroke="#c9a227"/>
+        <rect x="60" y="54" width="100" height="60" rx="3" stroke="#c9a227"/>
+        <rect x="70" y="62" width="80" height="44" rx="2" stroke="#c9a227"/>
+        <rect x="80" y="70" width="60" height="28" rx="2" stroke="#c9a227"/>
+      </g>
+      <rect x="96" y="80" width="28" height="12" fill="#111"/>
+      <text x="110" y="89" text-anchor="middle" style="font:5px 'Space Mono',monospace;fill:#aaa">MFRC522</text>
+      <text x="110" y="140" text-anchor="middle" class="lb">RC522 · RFID READER</text>
+      <rect x="30" y="164" width="160" height="10" fill="#111"/>
+      <g fill="#c9a227"><rect x="38" y="170" width="4" height="14"/><rect x="56" y="170" width="4" height="14"/><rect x="74" y="170" width="4" height="14"/><rect x="92" y="170" width="4" height="14"/><rect x="110" y="170" width="4" height="14"/><rect x="128" y="170" width="4" height="14"/><rect x="146" y="170" width="4" height="14"/><rect x="164" y="170" width="4" height="14"/></g>
+      <g style="font:5.5px 'Space Mono',monospace;fill:#cfe0ff" text-anchor="middle"><text x="40" y="160">SDA</text><text x="58" y="160">SCK</text><text x="76" y="160">MOSI</text><text x="94" y="160">MISO</text><text x="112" y="160">IRQ</text><text x="130" y="160">GND</text><text x="148" y="160">RST</text><text x="166" y="160">3V3</text></g>
+
+      <!-- Door -->
+      <text x="442" y="20" text-anchor="middle" class="lb">CLASSROOM DOOR</text>
+      <rect x="385" y="28" width="115" height="176" fill="#0f2a1c" stroke="#666" stroke-width="3"/>
+      <text id="roomtxt" x="450" y="118" text-anchor="middle" class="lb" style="fill:#2ecc71">ROOM</text>
+      <g id="door">
+        <rect x="391" y="34" width="103" height="164" fill="#7a4b24" stroke="#4a2c12" stroke-width="2"/>
+        <rect x="402" y="46" width="34" height="62" fill="none" stroke="#5a3519" stroke-width="2"/><rect x="446" y="46" width="34" height="62" fill="none" stroke="#5a3519" stroke-width="2"/>
+        <rect x="402" y="122" width="34" height="62" fill="none" stroke="#5a3519" stroke-width="2"/><rect x="446" y="122" width="34" height="62" fill="none" stroke="#5a3519" stroke-width="2"/>
+        <rect x="472" y="108" width="14" height="14" rx="2" fill="#333"/><circle cx="479" cy="115" r="3" fill="#d4af37"/>
+      </g>
+      <text id="doorst" x="442" y="224" text-anchor="middle" style="font:700 12px 'Space Mono',monospace" fill="#ff6b6b">LOCKED</text>
+
+      <!-- Servo -->
+      <rect x="372" y="262" width="118" height="62" rx="4" fill="#1e5fb5" stroke="#0e3a75" stroke-width="2"/>
+      <text x="446" y="316" text-anchor="middle" class="lb" style="font-size:7px">SG90 SERVO</text>
+      <circle cx="400" cy="293" r="12" fill="#cfd6de"/>
+      <g id="horn"><rect x="394" y="287" width="72" height="12" rx="6" fill="#f5f5f5" stroke="#aaa"/><circle cx="400" cy="293" r="3" fill="#555"/><circle cx="460" cy="293" r="2" fill="#888"/></g>
+      <text id="srvt" x="431" y="342" text-anchor="middle" style="font:8px 'Space Mono',monospace" fill="#8a8a8a">servo.write(0)</text>
+
+      <!-- ESP32 -->
+      <rect x="180" y="226" width="150" height="248" rx="8" fill="#1b1b1b" stroke="#000" stroke-width="2"/>
+      <g fill="#c9a227" id="pinsL"></g><g fill="#c9a227" id="pinsR"></g>
+      <rect x="235" y="236" width="60" height="96" fill="#bfc3c7" stroke="#8a8f94"/>
+      <path d="M241 244h14v8h-14zM259 244h30M241 258h14M259 258h30" stroke="#8a8f94" stroke-width="2" fill="none"/>
+      <text x="265" y="300" text-anchor="middle" style="font:700 8px 'Space Mono',monospace;fill:#333">ESP32</text>
+      <text x="265" y="312" text-anchor="middle" style="font:6px 'Space Mono',monospace;fill:#444">WROOM</text>
+      <text x="265" y="350" text-anchor="middle" class="lb" style="font-size:7px">ESP32 DEVKIT</text>
+      <rect x="244" y="364" width="42" height="28" fill="#111"/><text x="265" y="381" text-anchor="middle" class="lb" style="font-size:6px">CP2102</text>
+      <circle cx="212" cy="452" r="7" fill="#444"/><text x="212" y="468" text-anchor="middle" class="pn">EN</text>
+      <circle cx="298" cy="452" r="7" fill="#444"/><text x="298" y="468" text-anchor="middle" class="pn">BOOT</text>
+      <rect x="235" y="474" width="60" height="18" rx="3" fill="#aaa" stroke="#777"/>
+      <circle id="pwr" cx="200" cy="424" r="4" fill="#2ecc71"/><text x="208" y="427" class="pn">ON</text>
+      <circle id="wifiled" cx="200" cy="438" r="4" fill="#444"/><text x="208" y="441" class="pn">WiFi</text>
+      <g id="pinlbl" class="pn">
+        <text x="188" y="273.5">G5 SS</text><text x="188" y="295.5">G18 SCK</text><text x="188" y="317.5">G23 MOSI</text><text x="188" y="339.5">G19 MISO</text><text x="188" y="361.5">G0 RST</text><text x="188" y="383.5">GND</text><text x="188" y="405.5">3V3</text>
+        <g text-anchor="end"><text x="322" y="295.5">G17 PWM</text><text x="322" y="328.5">VIN 5V</text><text x="322" y="361.5">GND</text></g>
+      </g>
+      <g id="net" fill="none" stroke="#3498db" stroke-width="2.5" stroke-linecap="round"><path d="M257.9 214.9A10 10 0 0 1 272.1 214.9"/><path d="M252.3 209.3A18 18 0 0 1 277.7 209.3"/><path d="M246.6 203.6A26 26 0 0 1 283.4 203.6"/></g>
+
+      <!-- Card -->
+      <g id="card">
+        <rect id="cbg" width="110" height="70" rx="6" fill="#f2f2f2" stroke="#999"/>
+        <rect x="10" y="22" width="18" height="14" rx="2" fill="#d4af37"/>
+        <path d="M84 20a14 14 0 0 1 0 22M90 14a22 22 0 0 1 0 34" fill="none" stroke="#999" stroke-width="2" stroke-linecap="round"/>
+        <text id="cname" x="10" y="16" style="font:700 9px system-ui,sans-serif" fill="#222"></text>
+        <text id="cid" x="10" y="60" style="font:8px 'Space Mono',monospace" fill="#555"></text>
+      </g>
+    </svg>
+    <div class="tl">Tap a card on the reader:</div>
+    <div id="tray"></div>
+    <div class="ctl">
+      <label><input type="checkbox" id="down"> Simulate server offline</label>
+      <button class="btn" id="reset">Reset data</button>
+    </div>
+    <div id="ser"></div>
+  </section>
+
+  <div class="split" id="split" role="separator" aria-orientation="vertical" tabindex="0" title="Drag to resize · double-click to reset"><i></i></div>
+
+  <section class="card" id="right">
+    <div class="bar"><span class="dot"></span>Website<span class="url">https://rest-api-jiei.onrender.com/rfid-ispsc</span></div>
+    <iframe id="dash" title="RFID dashboard"></iframe>
+  </section>
+</div>
+
+<!-- Dashboard replica. Closing script tags are escaped so it can be embedded. -->
+<script type="text/plain" id="dash-src"><!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dashboard — RFID</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--maroon:#8f1d2c;--dark:#3a0a13;--gold:#f2a516;--bg:#f0f0f0;--line:#dcdcdc;--tx:#1d1d1d;--mu:#666}
+*{box-sizing:border-box}
+body{margin:0;font:16px/1.6 'IBM Plex Sans',system-ui,sans-serif;color:var(--tx);background:var(--bg)}
+.w{max-width:1500px;margin:0 auto;padding:0 20px}
+svg.i{width:1em;height:1em;fill:currentColor;vertical-align:-.12em}
+nav{background:var(--maroon);border-bottom:3px solid var(--gold);color:#fff}
+nav .w{display:flex;justify-content:space-between;align-items:center;min-height:84px;gap:12px;flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:14px}
+.logo{width:52px;height:52px;flex:none}
+.brand b{display:block;font-size:1.2rem;line-height:1.2}
+.brand small{display:block;font-size:.85rem;opacity:.9}
+.links{display:flex;gap:18px;font-weight:600;font-size:.95rem}
+.links span{display:flex;align-items:center;gap:6px}
+.ph{background:#fff;border-bottom:1px solid var(--line)}
+.row{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.ph .row{padding:26px 0 18px}
+h1{margin:0;font-size:2.5rem;line-height:1.1;font-weight:700;letter-spacing:-.01em}
+.acct{display:flex;align-items:center;gap:10px;border:1px solid #555;padding:10px 14px;background:#fff;font-size:.95rem}
+.acct .u{color:var(--maroon);font-size:1.5rem}
+.acct b{color:var(--maroon)}
+.tabs{display:flex;gap:6px}
+.tab{background:none;border:0;border-bottom:3px solid transparent;margin-bottom:-1px;padding:14px 18px;font:600 1rem 'IBM Plex Sans',sans-serif;color:#444;cursor:pointer}
+.tab.on{color:var(--maroon);border-color:var(--maroon)}
+main{padding:32px 0 48px}
+.panel{background:#fff;border:1px solid var(--line);padding:24px 32px;margin-bottom:24px}
+.panel.ac{border-left:4px solid var(--maroon)}
+.status{display:flex;gap:28px;align-items:flex-start}
+.ic{width:46px;height:46px;flex:none;background:#f6e6e9;color:var(--maroon);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-top:4px}
+h2{margin:0 0 12px;font-size:1.7rem;line-height:1.2;font-weight:700}
+.mu{color:var(--mu);margin:0 0 14px}
+.btn{background:var(--maroon);color:#fff;border:0;padding:12px 22px;font:600 1rem 'IBM Plex Sans',sans-serif;cursor:pointer}
+.btn:hover{background:#7a1724}
+.btn.gh{background:#fff;color:var(--maroon);border:1px solid var(--maroon)}
+.why h2{font-size:1.6rem;margin-bottom:16px}
+.why p{max-width:860px;margin:0;font-size:1.02rem;line-height:2.05}
+.why strong{color:var(--maroon);font-weight:700}
+.pill{display:inline-block;padding:1px 10px;font-size:.8rem;font-weight:700;border-radius:2px}
+.pill.on,.pill.ul{background:#e3f4e8;color:#1f7a3a}
+.pill.off{background:#ececec;color:#666}
+.pill.lk{background:#f6e6e9;color:var(--maroon)}
+.pill:before{content:'● ';font-size:.7em;vertical-align:.1em}
+.hd{margin-bottom:18px}.hd h2{margin:0}
+table{width:100%;border-collapse:collapse}
+th{text-align:left;font-size:.75rem;letter-spacing:1px;text-transform:uppercase;color:var(--mu);padding:12px 16px;border-bottom:1px solid var(--line)}
+td{padding:14px 16px;border-bottom:1px solid #eee;font-size:.95rem}
+tr:last-child td{border-bottom:0}
+.mono{font-family:'Space Mono',monospace;font-size:.85rem}
+.empty{text-align:center;color:var(--mu);padding:32px}
+.lnk{background:none;border:0;color:var(--maroon);font:600 .85rem 'IBM Plex Sans',sans-serif;cursor:pointer;padding:0}
+.lnk:hover{text-decoration:underline}
+.tbl{padding:0;overflow:auto}
+@keyframes fl{from{background:#fff3cf}to{background:transparent}}
+tr.flash{animation:fl 1.6s ease-out}
+form.panel{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+form label{display:flex;flex-direction:column;gap:4px;font-size:.8rem;font-weight:600;color:#444}
+form input{font:1rem 'IBM Plex Sans',sans-serif;padding:9px 12px;border:1px solid #aaa;min-width:200px}
+.err{color:var(--maroon);font-size:.85rem;width:100%}
+[hidden]{display:none!important}
+footer{background:var(--dark);border-top:3px solid var(--gold);color:#e8d9dc;padding:44px 0 28px}
+.fb{display:flex;align-items:center;gap:14px;padding-bottom:26px;border-bottom:1px solid #5a2a33;margin-bottom:30px}
+.fb b{display:block;color:#fff;font-size:1.2rem}
+.fb small{letter-spacing:2px;font-size:.75rem;font-weight:600;font-family:'Space Mono',monospace;opacity:.85}
+.cols{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:36px}
+.cols h4{margin:0 0 18px;padding-bottom:10px;border-bottom:2px solid var(--gold);font-size:.75rem;letter-spacing:1.5px;text-transform:uppercase;color:#fff}
+.cols p{margin:0;font-size:.92rem;line-height:1.8}
+.cols ul{list-style:none;margin:0;padding:0;font-size:.92rem}
+.cols li{display:flex;gap:10px;align-items:center;margin-bottom:10px}
+.cp{margin-top:32px;padding-top:22px;border-top:1px solid #5a2a33;font-size:.8rem;opacity:.8}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-user" viewBox="0 0 16 16"><circle cx="8" cy="5" r="3.2"/><path d="M1.5 15c0-3.6 3-5.6 6.5-5.6s6.5 2 6.5 5.6z"/></symbol>
+  <symbol id="i-home" viewBox="0 0 16 16"><path d="M8 1 0.5 8H3v6.5h4v-4h2v4h4V8h2.5z"/></symbol>
+  <symbol id="i-card" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.5 2.5h13A1.5 1.5 0 0 1 16 4v8a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 12V4a1.5 1.5 0 0 1 1.5-1.5zM2 6v1.5h12V6zm0 3.5V11h5V9.5z"/></symbol>
+  <symbol id="i-id" viewBox="0 0 16 16"><path fill-rule="evenodd" d="M1.5 3h13A1.5 1.5 0 0 1 16 4.5v7a1.5 1.5 0 0 1-1.5 1.5h-13A1.5 1.5 0 0 1 0 11.5v-7A1.5 1.5 0 0 1 1.5 3zM4.5 5.2a1.6 1.6 0 1 0 0 3.2 1.6 1.6 0 0 0 0-3.2zM2.5 11c0-1.4 1-2.2 2-2.2s2 .8 2 2.2zM9 5.5v1h4v-1zm0 2v1h4v-1zm0 2v1h3v-1z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 16 16"><path d="M3.6 1 6 1.4l1.4 3.4-1.7 1.3c.8 1.6 1.9 2.7 3.5 3.5l1.3-1.7 3.4 1.4.4 2.4c.1.9-.6 1.7-1.5 1.7C6.4 13.4 2.600 9.600 1.900 2.500 1.800 1.600 2.700.9 3.600 1z"/></symbol>
+  <symbol id="i-mail" viewBox="0 0 16 16"><path d="M1 3h14v1.2L8 9 1 4.200zM1 5.900l7 4.800 7-4.800V13H1z"/></symbol>
+  <symbol id="i-out" viewBox="0 0 16 16"><path d="M2 2h5v2H4v8h3v2H2zM9.500 4.500 14 8l-4.500 3.500V9H6V7h3.500z"/></symbol>
+  <symbol id="i-caret" viewBox="0 0 16 16"><path d="M3 5.500 8 10.500 13 5.500 11.800 4.500 8 8.300 4.200 4.500z"/></symbol>
+  <symbol id="logo" viewBox="0 0 48 48"><circle cx="24" cy="24" r="23" fill="#fff"/><circle cx="24" cy="24" r="18" fill="none" stroke="#c9a227" stroke-width="3"/><circle cx="24" cy="24" r="11" fill="#7a8b2d"/><path d="M24 15l2.600 6.400 6.900.5-5.300 4.400 1.700 6.700L24 29.500l-5.900 3.500 1.700-6.700-5.300-4.400 6.900-.5z" fill="#f2c94c"/></symbol>
+</svg>
+
+<nav><div class="w">
+  <div class="brand"><svg class="logo"><use href="/logo.png"/></svg><div><b>Ilocos Sur Polytechnic State College</b><small>Radio Frequency Identification</small></div></div>
+  <div class="links"><span>Dashboard</span><span>Logout <svg class="i"><use href="#i-out"/></svg></span></div>
+</div></nav>
+
+<header class="ph"><div class="w">
+  <div class="row"><h1>Dashboard</h1><div class="acct"><svg class="i u"><use href="#i-user"/></svg><span>Hi <b>test!</b></span><svg class="i"><use href="#i-caret"/></svg></div></div>
+  <div class="tabs"><button class="tab on" data-tab="home">Home</button><button class="tab" data-tab="cards">Registered Cards</button></div>
+</div></header>
+
+<main class="w">
+  <section id="v-home">
+    <div class="panel ac"><div class="status" id="home-status"></div></div>
+    <div class="panel why">
+      <h2>Reason why we implemented RFID on classrooms....</h2>
+      <p>Implementing an RFID (Radio Frequency Identification) system in schools can significantly <strong>enhance classroom security and optimize space utilization.</strong> This technology <strong>allows only authorized teachers to access specific rooms,</strong> thereby preventing students from using these areas as hangout spots when they do not have a scheduled class. By embedding RFID tags in teacher ID cards and installing RFID readers at the entrances of classrooms and other sensitive areas, <strong>the school can ensure that only designated staff can unlock and enter these rooms.</strong> This not only helps in maintaining discipline but also ensures that school facilities are used appropriately, <strong>fostering a more organized and secure learning environment.</strong></p>
+    </div>
+  </section>
+
+  <section id="v-cards" hidden>
+    <div class="row hd"><h2>Registered Cards</h2><button class="btn" data-act="form">+ Register card</button></div>
+    <form class="panel" id="regForm" hidden>
+      <label>Card ID (8 hex characters)<input id="fid" maxlength="8" autocomplete="off" spellcheck="false"></label>
+      <label>Card user<input id="fuser" maxlength="40" autocomplete="off"></label>
+      <div><button class="btn" type="submit">Save card</button> <button class="btn gh" type="button" data-act="cancel">Cancel</button></div>
+      <div class="err" id="ferr" hidden></div>
+    </form>
+    <div class="panel tbl"><table>
+      <thead><tr><th>#</th><th>Card ID</th><th>Card user</th><th>Status</th><th></th></tr></thead>
+      <tbody id="rows"></tbody>
+    </table></div>
+  </section>
+</main>
+
+<footer><div class="w">
+  <div class="fb"><svg class="logo"><use href="#logo"/></svg><div><b>Ilocos Sur Polytechnic State College</b><small>RADIO FREQUENCY IDENTIFICATION</small></div></div>
+  <div class="cols">
+    <div><h4>About</h4><p>Crafted with passion and innovation, our RFID solution is the brainchild of the brilliant minds in BSIT 3A. Designed with precision and dedication, this system embodies the creativity and expertise of our student community. With a focus on enhancing classroom security and accessibility, every aspect of our solution reflects the commitment and ingenuity of our team.</p></div>
+    <div><h4>Developers</h4><ul id="devs"></ul></div>
+    <div><h4>Tabs</h4><ul><li><svg class="i"><use href="#i-home"/></svg>Home</li><li><svg class="i"><use href="#i-card"/></svg>Registered Card</li></ul></div>
+    <div><h4>Contact</h4><ul><li><svg class="i"><use href="#i-phone"/></svg>09393939</li><li><svg class="i"><use href="#i-mail"/></svg>ispsc@gmail.com</li></ul></div>
+  </div>
+  <div class="cp">©markjerielgcabalbag2024</div>
+</div></footer>
+
+<script>
+const $=id=>document.getElementById(id);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let D={cards:[],locked:true,scanner:'LAB-A',unreg:''},prev={};
+$('devs').innerHTML=['Mark Jeriel Cabalbag','Dran Leynard Gamoso','Jared Ellasos','Ruvic Bacton','Shanne Cabotaje','Cyrell Corrales'].map(n=>'<li><svg class="i"><use href="#i-user"/></svg>'+n+'</li>').join('');
+
+function tab(t){
+  $('v-home').hidden=t!=='home';$('v-cards').hidden=t!=='cards';
+  document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));
+}
+function openForm(){tab('cards');$('regForm').hidden=false;$('fid').value=D.unreg||'';$('fuser').value='';$('ferr').hidden=true;$('fuser').focus()}
+
+function render(){
+  const n=D.cards.length,on=D.cards.filter(c=>c.status==='Online').length;
+  $('home-status').innerHTML=n===0
+    ? '<div class="ic"><svg class="i"><use href="#i-id"/></svg></div><div><h2>No cards available :</h2><button class="btn" data-act="form">Register your first card :)</button></div>'
+    : '<div class="ic"><svg class="i"><use href="#i-id"/></svg></div><div><h2>'+n+' card'+(n>1?'s':'')+' registered</h2><p class="mu">Room '+esc(D.scanner)+' · door <span class="pill '+(D.locked?'lk':'ul')+'">'+(D.locked?'LOCKED':'UNLOCKED')+'</span> · '+on+' card'+(on===1?'':'s')+' Online</p><button class="btn" data-act="cards">View registered cards</button></div>';
+  $('rows').innerHTML=n===0
+    ? '<tr><td colspan="5" class="empty">No cards available.</td></tr>'
+    : D.cards.map((c,i)=>'<tr class="'+(prev[c.id]&&prev[c.id]!==c.status?'flash':'')+'"><td>'+(i+1)+'</td><td class="mono">'+esc(c.id)+'</td><td>'+esc(c.user)+'</td><td><span class="pill '+(c.status==='Online'?'on':'off')+'">'+esc(c.status)+'</span></td><td><button class="lnk" data-act="del" data-id="'+esc(c.id)+'">Delete</button></td></tr>').join('');
+  prev={};D.cards.forEach(c=>prev[c.id]=c.status);
+}
+
+document.addEventListener('click',e=>{
+  const t=e.target.closest('[data-tab]');if(t){tab(t.dataset.tab);return}
+  const a=e.target.closest('[data-act]');if(!a)return;
+  const k=a.dataset.act;
+  if(k==='form')openForm();
+  else if(k==='cards')tab('cards');
+  else if(k==='cancel')$('regForm').hidden=true;
+  else if(k==='del')parent.postMessage({type:'delete',id:a.dataset.id},'*');
+});
+$('regForm').addEventListener('submit',e=>{
+  e.preventDefault();
+  const id=$('fid').value.trim().toUpperCase(),user=$('fuser').value.trim(),er=$('ferr');
+  let msg='';
+  if(!/^[0-9A-F]{8}$/.test(id))msg='Card ID must be 8 hex characters (0-9, A-F).';
+  else if(!user)msg='Please enter the card user.';
+  else if(D.cards.some(c=>c.id===id))msg='That card is already registered.';
+  if(msg){er.textContent=msg;er.hidden=false;return}
+  parent.postMessage({type:'register',id:id,user:user},'*');
+  $('regForm').hidden=true;
+});
+addEventListener('message',e=>{if(e.data&&e.data.type==='state'){D=e.data;render()}});
+render();
+parent.postMessage({type:'ready'},'*');
+<\/script>
+</body>
+</html>
+</script>
+
+<script>
+const $=id=>document.getElementById(id),cl=(v,a,b)=>Math.min(b,Math.max(a,v));
+const MASTER='F9327614',SCANNER='LAB-A',API='https://rest-api-jiei.onrender.com/rfid-ispsc/card';
+const seed=()=>[{id:'F9327614',user:'Admin (Master Key)',status:'Offline'},{id:'4B7E21A9',user:'Prof. Reyes',status:'Offline'},{id:'C0D85F32',user:'Prof. Santos',status:'Offline'}];
+const hex=()=>Array.from({length:4},()=>Math.floor(Math.random()*256).toString(16).padStart(2,'0')).join('').toUpperCase();
+const S={cards:seed(),unreg:null,locked:true,lastTag:'',lastUser:'',run:false,busy:false,gen:0,sp:1,down:false,t0:Date.now()};
+const newUnreg=()=>{let id;do{id=hex()}while(S.cards.some(c=>c.id===id));return{id}};
+S.unreg=newUnreg();
+const w=ms=>new Promise(r=>setTimeout(r,ms/S.sp));
+const step=async(ms,g)=>{await w(ms);return S.gen===g};
+const dev=$('dev'),dash=$('dash');
+
+function flow(n){const e=$('f'+n);if(!e)return;e.classList.add('hot');setTimeout(()=>e.classList.remove('hot'),700)}
+
+// ESP32 header pins
+for(let i=0;i<20;i++){
+  $('pinsL').insertAdjacentHTML('beforeend','<rect x="176" y="'+(236+i*11)+'" width="8" height="5"/>');
+  $('pinsR').insertAdjacentHTML('beforeend','<rect x="326" y="'+(236+i*11)+'" width="8" height="5"/>');
+}
+
+// Dashboard (embedded, fed by postMessage)
+dash.srcdoc=$('dash-src').textContent.replace(/<\\\/script>/g,'<'+'/script>');
+const push=()=>{try{dash.contentWindow.postMessage({type:'state',cards:S.cards.map(c=>({id:c.id,user:c.user,status:c.status})),locked:S.locked,scanner:SCANNER,unreg:S.unreg.id},'*')}catch(e){}};
+addEventListener('message',e=>{
+  if(e.source!==dash.contentWindow)return;
+  const m=e.data;if(!m||typeof m!=='object')return;
+  if(m.type==='ready'){push();return}
+  if(m.type==='register'){
+    const id=String(m.id||'').toUpperCase(),user=String(m.user||'').trim().slice(0,40);
+    if(!/^[0-9A-F]{8}$/.test(id)||!user||S.cards.some(c=>c.id===id))return;
+    S.cards.push({id:id,user:user,status:'Offline'});
+    if(id===S.unreg.id)S.unreg=newUnreg();
+    log('[website] card registered: '+id+' → '+user,'b');tray();push();
+  }
+  if(m.type==='delete'){
+    const n=S.cards.length;S.cards=S.cards.filter(c=>c.id!==m.id);
+    if(S.cards.length!==n){log('[website] card deleted: '+m.id,'b');tray();push()}
+  }
+});
+
+// Serial monitor
+function log(m,c){const s=$('ser'),d=document.createElement('div');d.className=c||'';d.textContent='['+((Date.now()-S.t0)/1000).toFixed(1).padStart(6)+'] '+m;s.appendChild(d);while(s.children.length>100)s.firstChild.remove();s.scrollTop=1e9}
+
+// Card tray
+function tray(){
+  const t=$('tray');t.innerHTML='';
+  S.cards.map(c=>({id:c.id,user:c.user})).concat([{id:S.unreg.id,user:null}]).forEach(c=>{
+    const b=document.createElement('button');b.className='btn chip'+(c.user?'':' unk');
+    const a=document.createElement('span');a.textContent=c.user||'Unregistered card';
+    const s=document.createElement('small');s.textContent=c.id;
+    b.appendChild(a);b.appendChild(s);b.onclick=()=>tap(c);t.appendChild(b);
+  });
+  updateBtns();
+}
+function updateBtns(){document.querySelectorAll('#tray .chip').forEach(b=>b.disabled=!S.run||S.busy)}
+function setBusy(v){S.busy=v;updateBtns()}
+function chip(t,on){const c=$('chip');c.textContent='● '+t;c.className=on?'on':''}
+
+// Door + servo
+function setDoor(locked){
+  S.locked=locked;dev.classList.toggle('open',!locked);
+  $('doorst').textContent=locked?'LOCKED':'UNLOCKED';$('doorst').setAttribute('fill',locked?'#ff6b6b':'#2ecc71');
+  $('srvt').textContent='servo.write('+(locked?0:90)+')';
+}
+
+// handleAccess() from the firmware
+async function access(c,g){
+  if(S.locked){
+    flow(3);setDoor(false);log('Door unlocked.');
+    S.lastTag=c.id;S.lastUser=c.user;log('User: '+c.user);
+    if(!await step(900,g))return;
+    return put(c,false,g);
+  }
+  if(c.id===S.lastTag||c.id===MASTER){
+    flow(3);setDoor(true);log('Door locked.');
+    S.lastTag='';S.lastUser='';log('User: '+c.user);
+    if(!await step(900,g))return;
+    return put(c,true,g);
+  }
+  log('You are not authorized to close the door.','r');
+  $('cbg').setAttribute('fill','#fde7c8');
+}
+
+// updateCardStatus() from the firmware
+async function put(c,locked,g){
+  flow(4);dev.classList.add('net');
+  const st=locked?'Offline':'Online';
+  if(!await step(800,g))return;
+  dev.classList.remove('net');
+  c.status=st;
+  log('HTTP PUT Request: 200','y');log('Status code: 200','y');
+  log('Response: {"card_id":"'+c.id+'","card_status":"'+st+'"}','b');
+  push();
+}
+
+// loop() from the firmware
+async function tap(c){
+  if(!S.run||S.busy)return;
+  const g=S.gen,reg=S.cards.find(x=>x.id===c.id);
+  setBusy(true);dev.style.setProperty('--dur',(.7/S.sp)+'s');
+  $('cname').textContent=c.user||'Unknown card';$('cid').textContent=c.id;$('cbg').setAttribute('fill','#f2f2f2');
+  dev.classList.add('tap');chip('READING',true);
+  if(!await step(800,g))return;
+  dev.classList.add('rd');flow(1);
+  log('RFID Tag: '+c.id);log('Scanner ID: '+SCANNER);
+  if(!await step(600,g))return;
+  flow(2);dev.classList.add('net');
+  log('Requesting URL: '+API+'/getCard');
+  if(!await step(900,g))return;
+  dev.classList.remove('net');
+  if(S.down){
+    $('cbg').setAttribute('fill','#fbd5d5');
+    log('HTTP GET Request: -1','y');log('Error on HTTP request','r');log('HTTP code: -1','y');log('Error message: connection refused','y');
+  }else{
+    log('HTTP GET Request: 200','y');log('Status code: 200','y');
+    const pl=JSON.stringify(S.cards.map(x=>({card_id:x.id,card_user:x.user,card_status:x.status})));
+    log('Payload: '+(pl.length>120?pl.slice(0,120)+'…':pl),'b');
+    if(!reg){log('Access denied.','r');$('cbg').setAttribute('fill','#fbd5d5')}
+    else{$('cbg').setAttribute('fill','#d6f5e0');await access(reg,g);if(S.gen!==g)return}
+  }
+  if(!await step(1000,g))return;
+  dev.classList.remove('tap','rd');chip('READY',true);
+  if(!await step(700,g))return;
+  setBusy(false);
+}
+
+// Boot / stop
+async function start(){
+  const g=++S.gen;S.run=false;S.busy=false;
+  $('simBtn').textContent='■ Stop';$('simBtn').classList.add('stop');dev.classList.add('run');chip('BOOTING',true);updateBtns();
+  S.lastTag='';S.lastUser='';setDoor(true);
+  log('Serial 115200 — boot');log('Door locked.');
+  if(!await step(700,g))return;
+  log('Connecting to WiFi');if(!await step(900,g))return;
+  log('......');if(!await step(700,g))return;
+  dev.classList.add('net');
+  log('Connected to WiFi network');log('IP address: 192.168.100.57');log('Scanner ID: '+SCANNER);
+  setTimeout(()=>dev.classList.remove('net'),500);
+  $('wifiled').setAttribute('fill','#3a7bd5');
+  if(!await step(600,g))return;
+  S.run=true;chip('READY',true);updateBtns();log('Ready — tap a card on the reader.');
+}
+function stop(){
+  S.gen++;S.run=false;S.busy=false;
+  dev.classList.remove('run','tap','rd','net');
+  $('simBtn').textContent='▶ Play';$('simBtn').classList.remove('stop');
+  $('wifiled').setAttribute('fill','#444');chip('POWERED OFF',false);updateBtns();log('Device powered off.','y');
+}
+
+$('simBtn').onclick=()=>$('simBtn').classList.contains('stop')?stop():start();
+$('spd').oninput=e=>{S.sp=+e.target.value;$('spv').textContent=S.sp+'×'};
+$('down').onchange=e=>{S.down=e.target.checked;log(S.down?'[sim] server set to offline':'[sim] server back online','b')};
+$('reset').onclick=()=>{S.cards=seed();S.unreg=newUnreg();tray();push();log('[sim] demo data reset.','y')};
+
+// resizable split
+const wrap=document.querySelector('.wrap'),spl=$('split');
+const setW=px=>wrap.style.setProperty('--lw',cl(px,380,wrap.clientWidth-380-72)+'px');
+spl.onpointerdown=e=>{spl.setPointerCapture(e.pointerId);wrap.classList.add('d');spl.classList.add('d')};
+spl.onpointermove=e=>{if(spl.classList.contains('d'))setW(e.clientX-wrap.getBoundingClientRect().left-24)};
+spl.onpointerup=()=>{wrap.classList.remove('d');spl.classList.remove('d')};
+spl.onkeydown=e=>{const wd=dev.getBoundingClientRect().width;if(e.key==='ArrowLeft')setW(wd-30);if(e.key==='ArrowRight')setW(wd+30)};
+spl.ondblclick=()=>wrap.style.removeProperty('--lw');
+
+setDoor(true);tray();
+log('Press Play to power on the ESP32.');
+</script>
+</body>
+</html>
